@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class AiResponse {
+    private String response;
     private String content;
     private String type;
     private Boolean success;

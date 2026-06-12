@@ -11,5 +11,9 @@ import lombok.NoArgsConstructor;
 @Builder
 public class AiHintRequest {
     private Long problemId;
+    private String problemTitle;
+    private String problemDescription;
+    private String userCode;
+    private String hintType;
     private String difficulty;
 }

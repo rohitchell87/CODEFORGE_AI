@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import api from '../services/api';
 import ReactMarkdown from 'react-markdown';
 import { MessageCircle, Sparkles, Send } from 'lucide-react';
 
@@ -25,18 +26,46 @@ function AiPage() {
     setMessages(updated);
     setInput('');
     setTyping(true);
-
-    window.setTimeout(() => {
-      setMessages((current) => [
-        ...current,
-        {
-          role: 'assistant',
-          content:
-            'Try breaking the problem into smaller cases, validating edge scenarios, and comparing the expected complexity to the constraints. If your current solution is too slow, focus on eliminating nested iterations and reducing memory allocations.',
-        },
-      ]);
+    try {
+      const payload = {
+        problemTitle: 'General Question',
+        problemDescription: input,
+        userCode: '',
+        hintType: 'DEBUG',
+      };
+      const resp = await api.post('/ai/hint', payload);
+      const content = resp?.data?.data?.content ?? resp?.data?.data?.response ?? 'No response from AI.';
+      setMessages((current) => [...current, { role: 'assistant', content }]);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'AI request failed';
+      setMessages((current) => [...current, { role: 'assistant', content: `Error: ${msg}` }]);
+    } finally {
       setTyping(false);
-    }, 900);
+    }
+  };
+
+  const handleQuickPrompt = async (hintType: string) => {
+    if (!input.trim()) return;
+    const updated: ChatMessage[] = [...messages, { role: 'user', content: input }];
+    setMessages(updated);
+    setInput('');
+    setTyping(true);
+    try {
+      const payload = {
+        problemTitle: 'General Question',
+        problemDescription: input,
+        userCode: '',
+        hintType: hintType,
+      };
+      const resp = await api.post('/ai/hint', payload);
+      const content = resp?.data?.data?.content ?? resp?.data?.data?.response ?? 'No response from AI.';
+      setMessages((current) => [...current, { role: 'assistant', content }]);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'AI request failed';
+      setMessages((current) => [...current, { role: 'assistant', content: `Error: ${msg}` }]);
+    } finally {
+      setTyping(false);
+    }
   };
 
   const messageRows = useMemo(
@@ -88,7 +117,7 @@ function AiPage() {
             <h2 className="text-lg font-semibold text-textPrimary">Need help with</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {['Algorithm choice', 'Optimization tips', 'Debug suggestions', 'Complexity review'].map((item) => (
-                <button key={item} type="button" className="rounded-2xl border border-white/10 bg-black px-4 py-3 text-left text-sm text-textPrimary transition hover:bg-white/5">
+                <button key={item} type="button" onClick={() => handleQuickPrompt(item)} className="rounded-2xl border border-white/10 bg-black px-4 py-3 text-left text-sm text-textPrimary transition hover:bg-white/5">
                   {item}
                 </button>
               ))}

@@ -44,22 +44,36 @@ public class CodeExecutionController {
     @PostMapping("/submit")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> submitCode(@RequestBody CreateSubmissionRequest request, HttpServletRequest httpRequest) {
+        System.out.println("\n=== CODE EXECUTION SUBMIT ENDPOINT HIT ===");
         log.info("REQUEST RECEIVED /code/submit");
         log.info("BACKEND SUBMIT HIT for problemId={} language={} requestUri={}", request.getProblemId(), request.getLanguage(), httpRequest.getRequestURI());
         log.info("PROBLEM ID = {}", request.getProblemId());
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("AUTHENTICATION OBJECT = " + auth);
+        System.out.println("AUTHENTICATION CLASS = " + (auth != null ? auth.getClass().getName() : "NULL"));
+        System.out.println("AUTH PRINCIPAL = " + (auth != null ? auth.getPrincipal() : "NULL"));
+        System.out.println("AUTH PRINCIPAL CLASS = " + (auth != null && auth.getPrincipal() != null ? auth.getPrincipal().getClass().getName() : "NULL"));
+        System.out.println("AUTH NAME = " + (auth != null ? auth.getName() : "null"));
+        System.out.println("AUTH AUTHORITIES = " + (auth != null ? auth.getAuthorities() : "null"));
+        System.out.println("IS AUTHENTICATED = " + (auth != null ? auth.isAuthenticated() : false));
+        
         log.info("AUTH USER = {}", auth != null ? auth.getName() : "null");
         log.info("AUTHORITIES = {}", auth != null ? auth.getAuthorities() : "null");
         log.info("REQUEST URI = {}", httpRequest.getRequestURI());
 
         if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal)) {
+            System.out.println("SUBMIT REJECTED: NO AUTHENTICATED USER");
             log.warn("Submit attempted without authenticated user: auth={}", auth);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Authentication required to submit code"));
         }
 
         UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
+        System.out.println("SUBMIT ACCEPTED FOR USER: " + userPrincipal.getEmail());
+        System.out.println("USER ID = " + userPrincipal.getId());
+        System.out.println("USER ROLE = " + userPrincipal.getRole());
+        
         log.info("Authenticated submit by userId={} email={}", userPrincipal.getId(), userPrincipal.getEmail());
 
         CodeSubmissionResult submissionResult = executionService.submitCode(userPrincipal.getId(), request);
@@ -67,6 +81,7 @@ public class CodeExecutionController {
                 submissionResult.getStatus(), submissionResult.getPassed(), submissionResult.getTotal(),
                 submissionResult.getRuntime(), submissionResult.getMemory());
 
+        System.out.println("SUBMISSION COMPLETED SUCCESSFULLY");
         return ResponseEntity.ok(Map.of(
                 "status", submissionResult.getStatus(),
                 "stdout", submissionResult.getCases() != null && !submissionResult.getCases().isEmpty()

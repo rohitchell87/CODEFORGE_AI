@@ -41,7 +41,7 @@ api.interceptors.response.use(
       configUrl: error?.config?.url,
       configBaseURL: error?.config?.baseURL,
     });
-    if (error?.response?.status === 401) {
+    if (error?.response?.status === 401 || error?.response?.status === 403) {
       logout();
       window.location.href = '/login';
     }

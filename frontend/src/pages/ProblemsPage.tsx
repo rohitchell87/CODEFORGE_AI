@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { getProblems } from '../services/problemService';
 import { runCode, submitCode } from '../services/codeService';
+import { requestAiHint, AiResponse } from '../services/aiService';
+import { useAuth } from '../context/AuthContext';
 import type { Language, ProblemSummary } from '../types/problem';
 
 type ExecutionResult = {
@@ -65,6 +67,11 @@ export default function ProblemsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'Description' | 'Editorial' | 'Solutions' | 'Submissions'>('Description');
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [selectedHintType, setSelectedHintType] = useState<string | null>(null);
+  const { token } = useAuth();
   const autosaveRef = useRef<number | null>(null);
 
   // Broadcast selection state so other global components (Sidebar) can react
@@ -223,6 +230,45 @@ export default function ProblemsPage() {
       setExecutionResult({ status: 'Error', runtime: 'N/A', memory: 'N/A', passed: 0, total: 0, cases: [] });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAiHint = async (hintType: string) => {
+    if (!selected) {
+      setAiError('Select a problem first to get AI guidance.');
+      return;
+    }
+
+    if (!token) {
+      setAiError('You must be logged in to use AI hints. Please sign in and try again.');
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError(null);
+    setAiResponse(null);
+    setSelectedHintType(hintType);
+
+    try {
+      const aiResult = await requestAiHint({
+        problemId: selected.id,
+        problemTitle: selected.title,
+        problemDescription: selected.description,
+        userCode: code,
+        hintType,
+        difficulty: selected.difficulty,
+      });
+
+      if (aiResult.success) {
+        setAiResponse(aiResult.response || aiResult.content || 'No response returned.');
+      } else {
+        setAiError(aiResult.response || aiResult.content || 'AI could not generate a response.');
+      }
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Unable to fetch AI response. Please try again.';
+      setAiError(message);
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -468,11 +514,33 @@ export default function ProblemsPage() {
 
               {aiOpen && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: 16, background: '#000000', overflowY: 'auto' }}>
-                  <div style={{ fontWeight: 700, marginBottom: 10 }}>AI Assistant</div>
-                  <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, lineHeight: 1.6 }}>
-                    <p><strong>Hint:</strong> Optimize with a HashMap to achieve O(n) runtime for Two Sum.</p>
-                    <p><strong>Debug:</strong> Check whether your algorithm uses the same element twice.</p>
-                    <p><strong>Complexity:</strong> Aim for linear time and constant extra space when possible.</p>
+                  <div style={{ fontWeight: 700, marginBottom: 14 }}>AI Assistant</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 16 }}>
+                    {['Algorithm Choice', 'Optimization Tips', 'Debug Suggestions', 'Complexity Review'].map((hint) => (
+                      <button
+                        key={hint}
+                        type="button"
+                        onClick={() => handleAiHint(hint)}
+                        disabled={aiLoading}
+                        style={aiHintButtonStyle(selectedHintType === hint)}
+                      >
+                        {hint}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ minHeight: 120, padding: 12, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, background: '#050505' }}>
+                    {aiLoading ? (
+                      <div style={{ color: '#FFFFFF' }}>Thinking...</div>
+                    ) : aiError ? (
+                      <div style={{ color: '#FF6B6B' }}>{aiError}</div>
+                    ) : aiResponse ? (
+                      <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, color: '#FFFFFF' }}>{aiResponse}</pre>
+                    ) : (
+                      <div style={{ color: 'rgba(255,255,255,0.65)', lineHeight: 1.6 }}>
+                        Select a hint type to receive targeted AI guidance for the current problem and editor code.
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -631,6 +699,16 @@ const aiButtonStyle: React.CSSProperties = {
   borderRadius: 8,
   cursor: 'pointer',
 };
+
+const aiHintButtonStyle = (active: boolean): React.CSSProperties => ({
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: active ? 'rgba(255,255,255,0.08)' : '#000000',
+  color: '#FFFFFF',
+  padding: '10px 12px',
+  borderRadius: 12,
+  cursor: 'pointer',
+  textAlign: 'left',
+});
 
 const metricStyle: React.CSSProperties = {
   background: '#000000',

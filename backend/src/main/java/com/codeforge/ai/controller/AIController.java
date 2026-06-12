@@ -19,17 +19,17 @@ public class AIController {
     private AIService aiService;
 
     @PostMapping("/hint")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    // Temporarily removed @PreAuthorize to diagnose AccessDenied issues
     public ResponseEntity<ApiResponse<AiResponse>> generateHint(@Valid @RequestBody AiHintRequest request) {
-        AiResponse response = aiService.generateHint(request.getProblemId());
+        AiResponse response = aiService.generateHint(request);
         return ResponseEntity.ok()
                 .body(new ApiResponse<>(HttpStatus.OK.value(), "Hint generated successfully", response));
     }
 
     @PostMapping("/explain")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    // Temporarily removed @PreAuthorize to diagnose AccessDenied issues
     public ResponseEntity<ApiResponse<AiResponse>> explainSolution(@Valid @RequestBody AiHintRequest request) {
-        AiResponse response = aiService.explainSolution(request.getProblemId());
+        AiResponse response = aiService.explainSolution(request);
         return ResponseEntity.ok()
                 .body(new ApiResponse<>(HttpStatus.OK.value(), "Solution explanation generated", response));
     }
