@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Objects;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,7 @@ public class UserService {
     private SubmissionRepository submissionRepository;
 
     public UserProfileDto getUserProfile(Long userId) {
+        Objects.requireNonNull(userId, "userId is required");
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
@@ -35,6 +37,7 @@ public class UserService {
     }
 
     public void updateUserStreak(Long userId) {
+        Objects.requireNonNull(userId, "userId is required");
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
@@ -55,6 +58,13 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    public void deleteCurrentUser(Long userId) {
+        Objects.requireNonNull(userId, "userId is required");
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        userRepository.delete(user);
+    }
+
     private UserProfileDto mapToProfileDto(User user) {
         long acceptedSubmissions = submissionRepository.countByUserIdAndIsAcceptedTrue(user.getId());
         
@@ -67,6 +77,7 @@ public class UserService {
                 .currentStreak(user.getCurrentStreak())
                 .maxStreak(user.getMaxStreak())
                 .role(user.getRole().toString())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }

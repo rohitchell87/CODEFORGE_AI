@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class CodeSubmissionCaseResult {
     private String name;
     private String status;
+    private String input;
     private String output;
     private String expected;
 }

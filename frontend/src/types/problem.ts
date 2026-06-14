@@ -35,6 +35,8 @@ export interface ProblemSummary {
   starterCodeCpp?: string;
   starterCodePython?: string;
   slug?: string;
+  submissionCount?: number;
+  acceptedCount?: number;
 }
 
 export interface ProblemPage<T> {
@@ -60,6 +62,22 @@ export interface SubmissionRecord {
   executionTime?: number;
   memoryUsage?: number;
   executionStatus?: string;
+  output?: string;
+  submittedAt: string;
+}
+
+export interface SubmissionDto {
+  id: number;
+  problemId: number;
+  problemTitle?: string;
+  userId?: number;
+  language?: string;
+  executionStatus?: string;
+  isAccepted?: boolean;
+  passedTests?: number;
+  totalTests?: number;
+  executionTime?: number;
+  memoryUsage?: number;
   output?: string;
   submittedAt: string;
 }

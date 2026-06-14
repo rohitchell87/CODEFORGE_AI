@@ -2,6 +2,7 @@ import api from './api';
 
 export interface DashboardStats {
   solvedCount: number;
+  totalSubmissions: number;
   streak: number;
   accuracy: number;
   contests: number;
@@ -10,24 +11,17 @@ export interface DashboardStats {
 }
 
 const fallbackStats: DashboardStats = {
-  solvedCount: 42,
-  streak: 7,
-  accuracy: 88,
-  contests: 4,
+  solvedCount: 0,
+  totalSubmissions: 0,
+  streak: 0,
+  accuracy: 0,
+  contests: 0,
   recentActivity: [
-    { label: 'Solved', value: 42 },
-    { label: 'Accepted', value: 37 },
-    { label: 'Attempts', value: 52 },
+    { label: 'Solved', value: 0 },
+    { label: 'Accepted', value: 0 },
+    { label: 'Attempts', value: 0 },
   ],
-  solvedTrend: [
-    { day: 'Mon', solved: 5 },
-    { day: 'Tue', solved: 7 },
-    { day: 'Wed', solved: 6 },
-    { day: 'Thu', solved: 10 },
-    { day: 'Fri', solved: 4 },
-    { day: 'Sat', solved: 5 },
-    { day: 'Sun', solved: 5 },
-  ],
+  solvedTrend: [],
 };
 
 export async function getDashboardStats() {

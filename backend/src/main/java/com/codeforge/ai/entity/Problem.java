@@ -3,9 +3,10 @@ package com.codeforge.ai.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,7 +16,8 @@ import java.util.Set;
         @Index(name = "idx_problem_slug", columnList = "slug", unique = true),
         @Index(name = "idx_problem_difficulty", columnList = "difficulty")
 })
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor

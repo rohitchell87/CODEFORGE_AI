@@ -8,6 +8,7 @@ import AiPage from './AiPage';
 import ProblemsPage from './ProblemsPage';
 import SubmissionsPage from './SubmissionsPage';
 import ContestsPage from './ContestsPage';
+import ContestDetailsPage from './ContestDetailsPage';
 import SettingsPage from './SettingsPage';
 import { getDashboardStats } from '../services/dashboard';
 import type { DashboardStats } from '../services/dashboard';
@@ -36,8 +37,8 @@ function DashboardHome() {
   );
 
   return (
-    <div className="h-full overflow-hidden">
-      <div className="h-full overflow-y-auto space-y-6">
+    <div className="w-full">
+      <div className="space-y-6 pb-12">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {cards.map((card) => (
             <div key={card.label} className="rounded-2xl border border-white/10 bg-black p-4">
@@ -111,17 +112,19 @@ function DashboardHome() {
 
 function DashboardPage() {
   return (
-    <div className="h-screen overflow-hidden bg-black text-textPrimary">
+    <div className="h-screen bg-black text-textPrimary flex flex-col">
       <Navbar />
-      <div className="flex h-[calc(100vh-64px)] w-full gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:gap-6 overflow-hidden">
+      <div className="flex flex-1 w-full gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:gap-6 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 min-w-0 overflow-hidden">
+        <main className="flex-1 min-w-0 overflow-y-auto">
           <Routes>
             <Route path="/" element={<DashboardHome />} />
             <Route path="ai" element={<AiPage />} />
             <Route path="problems" element={<ProblemsPage />} />
+            <Route path="problems/:problemId" element={<ProblemsPage />} />
             <Route path="submissions" element={<SubmissionsPage />} />
             <Route path="contests" element={<ContestsPage />} />
+            <Route path="contests/:contestId" element={<ContestDetailsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

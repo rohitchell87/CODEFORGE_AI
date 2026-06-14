@@ -11,7 +11,7 @@ function App() {
   const location = useLocation();
 
   return (
-    <div className="h-screen overflow-hidden bg-black text-textPrimary">
+    <div className="min-h-screen bg-black text-textPrimary">
       <AnimatePresence mode="wait">
         <motion.div
           key={location.pathname}
@@ -19,7 +19,7 @@ function App() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.28, ease: 'easeOut' }}
-          className="h-screen"
+          className="min-h-screen"
         >
           <Routes location={location} key={location.pathname}>
             <Route path="/login" element={<LoginPage />} />

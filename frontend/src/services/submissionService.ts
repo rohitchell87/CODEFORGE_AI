@@ -1,5 +1,5 @@
 import api from './api';
-import type { SubmissionResult, SubmissionRecord, ProblemPage } from '../types/problem';
+import type { SubmissionResult, SubmissionRecord, SubmissionDto, ProblemPage } from '../types/problem';
 
 export interface CreateSubmissionRequest {
   problemId: number;
@@ -31,6 +31,24 @@ export const fetchUserSubmissions = async (
     return response.data?.data;
   } catch (error: any) {
     console.error('SUBMISSIONS FETCH ERROR:', {
+      message: error?.message,
+      status: error?.response?.status,
+      statusText: error?.response?.statusText,
+      data: error?.response?.data,
+      url: error?.config?.url,
+      fullUrl: error?.config?.baseURL + error?.config?.url,
+    });
+    throw error;
+  }
+};
+
+export const fetchProblemSubmissions = async (problemId: number): Promise<SubmissionDto[]> => {
+  const url = `/submissions/problem/${problemId}`;
+  try {
+    const response = await api.get<{ data: SubmissionDto[] }>(url);
+    return response.data?.data ?? [];
+  } catch (error: any) {
+    console.error('PROBLEM SUBMISSIONS FETCH ERROR:', {
       message: error?.message,
       status: error?.response?.status,
       statusText: error?.response?.statusText,

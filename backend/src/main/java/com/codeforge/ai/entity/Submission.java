@@ -3,13 +3,15 @@ package com.codeforge.ai.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "submissions")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -37,6 +39,12 @@ public class Submission {
     private Double executionTime;
 
     private Double memoryUsage;
+
+    private Integer runtimeMs;
+
+    private Integer memoryKb;
+
+    private String verdict;
 
     @Column(nullable = false)
     private LocalDateTime submittedAt;

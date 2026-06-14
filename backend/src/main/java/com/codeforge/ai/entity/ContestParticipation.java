@@ -1,15 +1,18 @@
 package com.codeforge.ai.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "contest_participations")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -24,6 +27,7 @@ public class ContestParticipation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contest_id", nullable = false)
+    @JsonIgnore
     private Contest contest;
 
     private Integer score;

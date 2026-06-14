@@ -13,6 +13,7 @@ import java.util.List;
 @Builder
 public class DashboardStatsDto {
     private Integer solvedCount;
+    private Integer totalSubmissions;
     private Integer streak;
     private Integer accuracy;
     private Integer contests;

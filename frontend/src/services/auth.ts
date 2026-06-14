@@ -1,5 +1,13 @@
 import api from './api';
-import { AuthResponse, LoginRequest, SignupRequest } from '../types/auth';
+import {
+  AuthResponse,
+  LoginRequest,
+  PasswordResetRequest,
+  PasswordResetStartRequest,
+  PasswordResetVerifyRequest,
+  SecurityQuestionResponse,
+  SignupRequest,
+} from '../types/auth';
 
 const TOKEN_KEY = 'codeforge_ai_token';
 
@@ -37,6 +45,26 @@ export async function signup(request: SignupRequest) {
   const authResponse = response.data.data;
   setAuthToken(authResponse.token);
   return authResponse;
+}
+
+export async function startPasswordReset(request: PasswordResetStartRequest) {
+  const response = await api.post<ApiResponse<SecurityQuestionResponse>>('/auth/forgot-password/start', request);
+  return response.data.data;
+}
+
+export async function verifySecurityAnswer(request: PasswordResetVerifyRequest) {
+  const response = await api.post<ApiResponse<string>>('/auth/forgot-password/verify', request);
+  return response.data.data;
+}
+
+export async function resetPassword(request: PasswordResetRequest) {
+  const response = await api.post<ApiResponse<string>>('/auth/forgot-password/reset', request);
+  return response.data.data;
+}
+
+export async function deleteAccount() {
+  const response = await api.delete<ApiResponse<string>>('/users/me');
+  return response.data.data;
 }
 
 export function logout() {

@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
@@ -35,14 +36,20 @@ public class SubmissionService {
     private ProblemRepository problemRepository;
 
     public SubmissionDto createSubmission(Long userId, CreateSubmissionRequest request) {
-        User user = userRepository.findById(userId)
+        Objects.requireNonNull(userId, "userId is required");
+        Objects.requireNonNull(request, "request is required");
+        Objects.requireNonNull(request.getProblemId(), "problemId is required");
+
+        User user = userRepository.findById(Objects.requireNonNull(userId, "userId is required"))
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        Problem problem = problemRepository.findById(request.getProblemId())
+        Problem problem = problemRepository.findById(Objects.requireNonNull(request.getProblemId(), "problemId is required"))
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + request.getProblemId()));
 
         // Simulate submission (in real scenario, this would compile and test the code)
         boolean isAccepted = simulateCodeExecution(request.getCode());
+        double simulatedTime = generateExecutionTime();
+        double simulatedMemory = generateMemoryUsage();
 
         Submission submission = Submission.builder()
                 .user(user)
@@ -51,8 +58,11 @@ public class SubmissionService {
                 .language(request.getLanguage() != null ? request.getLanguage() : "Java")
                 .isAccepted(isAccepted)
                 .executionStatus(isAccepted ? "ACCEPTED" : "WRONG_ANSWER")
-                .executionTime(generateExecutionTime()) // Simulated
-                .memoryUsage(generateMemoryUsage()) // Simulated
+                .verdict(isAccepted ? "Accepted" : "Wrong Answer")
+                .executionTime(simulatedTime)
+                .memoryUsage(simulatedMemory)
+                .runtimeMs((int) Math.round(simulatedTime * 1000))
+                .memoryKb((int) Math.round(simulatedMemory))
                 .problemTitle(problem.getTitle())
                 .passedTests(isAccepted ? 1 : 0)
                 .totalTests(1)
@@ -93,10 +103,14 @@ public class SubmissionService {
     }
 
     public SubmissionDto createSubmission(Long userId, CreateSubmissionRequest request, CodeSubmissionResult result) {
-        User user = userRepository.findById(userId)
+        Objects.requireNonNull(userId, "userId is required");
+        Objects.requireNonNull(request, "request is required");
+        Objects.requireNonNull(request.getProblemId(), "problemId is required");
+
+        User user = userRepository.findById(Objects.requireNonNull(userId, "userId is required"))
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        Problem problem = problemRepository.findById(request.getProblemId())
+        Problem problem = problemRepository.findById(Objects.requireNonNull(request.getProblemId(), "problemId is required"))
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + request.getProblemId()));
 
         boolean accepted = "Accepted".equalsIgnoreCase(result.getStatus());
@@ -104,6 +118,9 @@ public class SubmissionService {
         int passedTests = result.getCases() != null ? (int) result.getCases().stream()
                 .filter(c -> "Accepted".equalsIgnoreCase(c.getStatus())).count() : 0;
         int totalTests = result.getCases() != null ? result.getCases().size() : 0;
+
+        int runtimeMs = parseMilliseconds(result.getRuntime());
+        int memoryKb = parseInt(result.getMemory());
 
         Submission submission = Submission.builder()
                 .user(user)
@@ -113,8 +130,11 @@ public class SubmissionService {
                 .output(buildSubmissionOutput(result))
                 .isAccepted(accepted)
                 .executionStatus(result.getStatus())
+                .verdict(result.getStatus())
                 .executionTime(parseDouble(result.getRuntime()))
-                .memoryUsage(parseInt(result.getMemory()))
+                .memoryUsage(parseDouble(result.getMemory()))
+                .runtimeMs(runtimeMs)
+                .memoryKb(memoryKb)
                 .problemTitle(problem.getTitle())
                 .passedTests(passedTests)
                 .totalTests(totalTests)
@@ -185,18 +205,31 @@ public class SubmissionService {
         }
     }
 
-    private Double parseInt(String value) {
+    private int parseInt(String value) {
         if (value == null) {
-            return 0.0;
+            return 0;
         }
         try {
-            return (double) Integer.parseInt(value.replaceAll("[^0-9]", ""));
+            return Integer.parseInt(value.replaceAll("[^0-9]", ""));
         } catch (NumberFormatException ex) {
-            return 0.0;
+            return 0;
+        }
+    }
+
+    private int parseMilliseconds(String value) {
+        if (value == null) {
+            return 0;
+        }
+        try {
+            double seconds = Double.parseDouble(value.replaceAll("[^0-9.]", ""));
+            return (int) Math.round(seconds * 1000);
+        } catch (NumberFormatException ex) {
+            return 0;
         }
     }
 
     public SubmissionDto getSubmissionById(Long id) {
+        Objects.requireNonNull(id, "submission id is required");
         Submission submission = submissionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Submission not found with id: " + id));
         return mapToDto(submission);
@@ -271,6 +304,9 @@ public class SubmissionService {
                     .isAccepted(submission.getIsAccepted())
                     .executionTime(submission.getExecutionTime())
                     .memoryUsage(submission.getMemoryUsage())
+                    .runtimeMs(submission.getRuntimeMs())
+                    .memoryKb(submission.getMemoryKb())
+                    .verdict(submission.getVerdict())
                     .language(submission.getLanguage())
                     .executionStatus(submission.getExecutionStatus())
                     .passedTests(submission.getPassedTests())

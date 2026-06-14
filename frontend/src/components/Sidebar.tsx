@@ -1,5 +1,4 @@
 import { NavLink } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import { LayoutDashboard, Zap, BookOpen, ClipboardList, Trophy, Settings } from 'lucide-react';
 
 const links = [
@@ -11,25 +10,13 @@ const links = [
 ];
 
 function Sidebar() {
-  const [showBack, setShowBack] = useState(false);
-
-  useEffect(() => {
-    const listener = (e: any) => {
-      const id = e?.detail?.selectedId ?? null;
-      setShowBack(!!id);
-    };
-    window.addEventListener('problemSelectionChange', listener as EventListener);
-    return () => window.removeEventListener('problemSelectionChange', listener as EventListener);
-  }, []);
-
   return (
-    <aside className="hidden h-full shrink-0 border-r border-white/10 bg-black lg:flex lg:w-56 lg:flex-col px-2 py-4 overflow-hidden">
-      <div>
-        <div className="px-2 pb-4">
-          <p className="text-xs uppercase tracking-widest text-textSecondary">Workspace</p>
-        </div>
+    <aside className="hidden h-full shrink-0 border-r border-white/10 bg-black lg:flex lg:w-56 lg:flex-col px-2 py-4 overflow-hidden flex-col">
+      <div className="px-2 pb-4">
+        <p className="text-xs uppercase tracking-widest text-textSecondary">Workspace</p>
+      </div>
 
-        <nav className="space-y-2 px-1">
+      <nav className="sidebar-nav space-y-2 px-1 overflow-y-auto flex-1">
           {links.map((item) => {
             const Icon = item.icon;
             return (
@@ -50,18 +37,15 @@ function Sidebar() {
             );
           })}
         </nav>
-      </div>
 
-      <div className="mt-auto flex flex-col gap-3 px-1">
-        {showBack && (
-          <button
-            onClick={() => window.dispatchEvent(new Event('backToProblems'))}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition border border-white/10 text-textSecondary hover:text-textPrimary hover:bg-white/5`}
-          >
-            <BookOpen size={16} className="flex-shrink-0" />
-            <span className="truncate">Back To Problems</span>
-          </button>
-        )}
+      <div className="sidebar-footer flex flex-col gap-3 px-1 pt-4 border-t border-white/10 pb-6 flex-shrink-0">
+        <button
+          onClick={() => window.dispatchEvent(new Event('backToProblems'))}
+          className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition border border-white/10 text-textSecondary hover:text-textPrimary hover:bg-white/5`}
+        >
+          <BookOpen size={16} className="flex-shrink-0" />
+          <span className="truncate">Back To Problems</span>
+        </button>
 
         <NavLink
           to="/dashboard/settings"

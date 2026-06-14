@@ -1,6 +1,7 @@
 import api from './api';
 
 export interface RunRequest {
+  problemId: number;
   language: string;
   code: string;
   customInput?: string;
@@ -14,6 +15,9 @@ export interface RunResponse {
   runtime: string;
   memory: string;
   status: string;
+  passed?: number;
+  total?: number;
+  cases?: Array<{ name: string; status: string; input?: string; output?: string; expected?: string }>;
 }
 
 export interface SubmitRequest {

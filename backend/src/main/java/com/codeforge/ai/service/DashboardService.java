@@ -33,9 +33,14 @@ public class DashboardService {
         long totalSubmissions = submissionRepository.countByUserId(userId);
         int accuracy = totalSubmissions == 0 ? 0 : (int) Math.round((acceptedCount * 100.0) / totalSubmissions);
         int contests = user.getContestParticipations() == null ? 0 : user.getContestParticipations().size();
+        int solvedCount = (int) submissionRepository.findByUserIdAndIsAcceptedTrueOrderBySubmittedAtDesc(userId, org.springframework.data.domain.Pageable.unpaged())
+                .stream()
+                .map(submission -> submission.getProblem().getId())
+                .distinct()
+                .count();
 
         List<DashboardActivityDto> recentActivity = List.of(
-                DashboardActivityDto.builder().label("Solved").value((int) acceptedCount).build(),
+                DashboardActivityDto.builder().label("Solved").value(solvedCount).build(),
                 DashboardActivityDto.builder().label("Accepted").value((int) acceptedCount).build(),
                 DashboardActivityDto.builder().label("Attempts").value((int) totalSubmissions).build()
         );
@@ -43,7 +48,8 @@ public class DashboardService {
         List<DashboardTrendDto> solvedTrend = buildSolvedTrend(userId);
 
         return DashboardStatsDto.builder()
-                .solvedCount((int) acceptedCount)
+                .solvedCount(solvedCount)
+                .totalSubmissions((int) totalSubmissions)
                 .streak(user.getCurrentStreak() == null ? 0 : user.getCurrentStreak())
                 .accuracy(accuracy)
                 .contests(contests)

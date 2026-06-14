@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface ContestParticipationRepository extends JpaRepository<ContestParticipation, Long> {
-    Page<ContestParticipation> findByContestId(Long contestId, Pageable pageable);
+    Page<ContestParticipation> findByContestIdOrderByScoreDescRankAsc(Long contestId, Pageable pageable);
     Optional<ContestParticipation> findByContestIdAndUserId(Long contestId, Long userId);
     List<ContestParticipation> findByUserIdOrderByJoinedAtDesc(Long userId);
 }

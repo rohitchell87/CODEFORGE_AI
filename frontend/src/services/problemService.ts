@@ -1,5 +1,5 @@
 import api from './api';
-import type { ProblemSummary, ProblemPage } from '../types/problem';
+import type { ProblemSummary, ProblemPage, ProblemTestCase } from '../types/problem';
 
 interface RawProblemDto {
   id: number;
@@ -11,11 +11,14 @@ interface RawProblemDto {
   exampleInput?: string;
   exampleOutput?: string;
   sampleSolution?: string;
+  solutionTemplate?: string;
   constraints?: string | string[];
   hints?: string | string[];
   starterCodeJava?: string;
   starterCodeCpp?: string;
   starterCodePython?: string;
+  visibleTestCases?: ProblemTestCase[];
+  hiddenTestCases?: ProblemTestCase[];
   acceptanceRate: number;
   submissionCount?: number;
   acceptedCount?: number;
@@ -47,12 +50,17 @@ function mapDto(problem: RawProblemDto, solvedIds: Set<number>): ProblemSummary 
     category: problem.category || 'General',
     solved: solvedIds.has(problem.id),
     acceptanceRate: problem.acceptanceRate ?? 0,
+    submissionCount: problem.submissionCount ?? 0,
+    acceptedCount: problem.acceptedCount ?? 0,
     description: problem.description ?? 'No description available.',
     exampleInput: problem.exampleInput ?? '',
     exampleOutput: problem.exampleOutput ?? '',
     sampleSolution: problem.sampleSolution ?? '',
+    solutionTemplate: problem.solutionTemplate ?? '',
     constraints,
     hints,
+    visibleTestCases: problem.visibleTestCases ?? [],
+    hiddenTestCases: problem.hiddenTestCases ?? [],
     tags: problem.tags ?? [problem.category || 'General'],
     starterCodeJava: problem.starterCodeJava ?? '',
     starterCodeCpp: problem.starterCodeCpp ?? '',

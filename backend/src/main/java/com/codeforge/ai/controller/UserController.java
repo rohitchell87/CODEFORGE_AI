@@ -52,4 +52,14 @@ public class UserController {
         return ResponseEntity.ok()
                 .body(new ApiResponse<>(HttpStatus.OK.value(), "Solved problems retrieved", solvedProblems));
     }
+
+    @DeleteMapping("/me")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<String>> deleteCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
+        userService.deleteCurrentUser(userPrincipal.getId());
+        return ResponseEntity.ok()
+                .body(new ApiResponse<>(HttpStatus.OK.value(), "User account deleted successfully", "Account deleted"));
+    }
 }

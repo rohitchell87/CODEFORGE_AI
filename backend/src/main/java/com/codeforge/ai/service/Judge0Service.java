@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -21,6 +23,8 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -41,6 +45,11 @@ public class Judge0Service {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final RestTemplate rest = new RestTemplate();
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(Judge0Service.class);
+    private static final Pattern SOLUTION_CLASS_PATTERN = Pattern.compile("\\bclass\\s+Solution\\b");
+    private static final Pattern MAIN_CLASS_PATTERN = Pattern.compile("\\bclass\\s+Main\\b");
+    private static final Pattern SOLUTION_METHOD_PATTERN = Pattern.compile("public\\s+(?:static\\s+)?([\\w\\[\\]<>]+)\\s+([A-Za-z_][$\\w]*)\\s*\\(([^)]*)\\)");
+
     private int languageIdFor(String language) {
         if (language == null) return 62; // default Java
         String l = language.trim().toLowerCase();
@@ -60,9 +69,15 @@ public class Judge0Service {
             String stdin = request.getCustomInput() == null ? "" : request.getCustomInput();
             int languageId = languageIdFor(request.getLanguage());
 
+            String finalSource = sourceCode;
+            if (shouldWrapJavaSolution(sourceCode, request.getLanguage())) {
+                finalSource = buildJavaMainWrapper(sourceCode, stdin);
+                log.info("Generated Main.java wrapper for Solution code:\n{}", finalSource);
+            }
+
             Map<String, Object> payload = new HashMap<>();
             payload.put("language_id", languageId);
-            payload.put("source_code", Base64.getEncoder().encodeToString(sourceCode.getBytes()));
+            payload.put("source_code", Base64.getEncoder().encodeToString(finalSource.getBytes()));
             payload.put("stdin", Base64.getEncoder().encodeToString(stdin.getBytes()));
 
             HttpHeaders headers = new HttpHeaders();
@@ -91,6 +106,7 @@ public class Judge0Service {
                 return new CodeRunResponse("[0,1]", "52 ms", "43 MB", "Accepted");
             }
 
+            log.info("Starting Judge0 execution request: languageId={} language={} sourceLength={} stdinLength={} createUrl={} apiKeySet={} apiHostSet={}", languageId, request.getLanguage(), sourceCode.length(), stdin.length(), createUrl, hasApiKey, hasApiHost);
             log.info("Judge0 config: url={} apiHost={} apiKeyPrefix={} rapidApiMode={}", judge0Url, apiHost == null ? "(none)" : apiHost, apiKeyMask, usingRapidApi);
             log.info("Submitting to Judge0 create endpoint: {}", createUrl);
             log.debug("Judge0 request baseUrl={} language={} codeLength={} stdinLength={} apiKeySet={} apiHostSet={}", judge0Url, languageId, sourceCode.length(), stdin.length(), hasApiKey, hasApiHost);
@@ -142,6 +158,7 @@ public class Judge0Service {
 
             String token = String.valueOf(tokenObj);
             log.info("Judge0 submission token: {}", token);
+            log.info("Waiting for Judge0 result for token={} at polling url={}", token, judge0Url + "/submissions/" + token + "?base64_encoded=true");
 
             String pollUrl = judge0Url + "/submissions/" + token + "?base64_encoded=true";
 
@@ -241,6 +258,114 @@ public class Judge0Service {
             String message = extractNetworkError(ex);
             return new CodeRunResponse("Execution failed: " + message, "0 s", "0 KB", "Error");
         }
+    }
+
+    private boolean shouldWrapJavaSolution(String sourceCode, String language) {
+        if (language == null) {
+            return false;
+        }
+        String lang = language.trim().toLowerCase();
+        if (!lang.startsWith("java")) {
+            return false;
+        }
+        if (!SOLUTION_CLASS_PATTERN.matcher(sourceCode).find()) {
+            return false;
+        }
+        return !MAIN_CLASS_PATTERN.matcher(sourceCode).find();
+    }
+
+    static String buildJavaMainWrapper(String sourceCode, String stdin) {
+        Matcher methodMatcher = SOLUTION_METHOD_PATTERN.matcher(sourceCode);
+        String methodName = "solve";
+        String returnType = "void";
+        String methodArgs = "";
+        boolean found = false;
+        while (methodMatcher.find()) {
+            String type = methodMatcher.group(1);
+            String name = methodMatcher.group(2);
+            String args = methodMatcher.group(3).trim();
+            if (!name.equals("Solution") && !name.equals("main")) {
+                methodName = name;
+                returnType = type;
+                methodArgs = args;
+                found = true;
+                break;
+            }
+        }
+
+        String invocation;
+        if (!found || methodArgs.isEmpty()) {
+            invocation = "System.out.println(new Solution()." + methodName + "());";
+        } else {
+            String[] argParts = methodArgs.split(",");
+            StringBuilder setupCode = new StringBuilder();
+            String[] argNames = new String[argParts.length];
+            boolean useLines = argParts.length > 1;
+
+            if (useLines) {
+                setupCode.append("String[] lines = input.split(\"\\r?\\n\");\n        ");
+            }
+
+            for (int i = 0; i < argParts.length; i++) {
+                String arg = argParts[i].trim();
+                String[] argTokens = arg.split("\\s+");
+                String argType = argTokens.length > 1 ? argTokens[0] : "String";
+                String argName = argTokens.length > 1 ? argTokens[1] : "arg";
+                argNames[i] = argName;
+
+                String argInput;
+                if (!useLines) {
+                    argInput = "input";
+                } else if (i == argParts.length - 1) {
+                    argInput = "String.join(\"\\n\", java.util.Arrays.copyOfRange(lines, " + i + ", lines.length))";
+                } else {
+                    argInput = "(lines.length > " + i + " ? lines[" + i + "] : \"\")";
+                }
+
+                setupCode.append(buildJavaArgumentInitialization(argType, argName, argInput));
+                setupCode.append("\n        ");
+            }
+
+            String joinedArgs = String.join(", ", java.util.Arrays.asList(argNames));
+            String resultExpression = "new Solution()." + methodName + "(" + joinedArgs + ")";
+            if ("void".equals(returnType)) {
+                invocation = setupCode.toString() + "new Solution()." + methodName + "(" + joinedArgs + ");";
+            } else {
+                invocation = setupCode.toString() + "System.out.println(" + buildJavaOutputExpression(returnType, resultExpression) + ");";
+            }
+        }
+
+        return sourceCode + "\n\npublic class Main {\n    public static void main(String[] args) {\n        String input = readInput();\n        " + invocation + "\n    }\n\n    private static String readInput() {\n        try (java.util.Scanner scanner = new java.util.Scanner(System.in).useDelimiter(\"\\\\A\")) {\n            return scanner.hasNext() ? scanner.next() : \"\";\n        }\n    }\n}\n";
+    }
+
+    private static String buildJavaArgumentInitialization(String argType, String argName, String argInput) {
+        return switch (argType) {
+            case "String" -> "String " + argName + " = " + argInput + ".trim();";
+            case "int" -> "int " + argName + " = Integer.parseInt(" + argInput + ".trim());";
+            case "long" -> "long " + argName + " = Long.parseLong(" + argInput + ".trim());";
+            case "boolean" -> "boolean " + argName + " = Boolean.parseBoolean(" + argInput + ".trim());";
+            case "String[]" -> "String[] " + argName + " = " + argInput + ".trim().isEmpty() ? new String[0] : " + argInput + ".trim().split(\"[\\\\s,]+\");";
+            case "int[]" -> "int[] " + argName + " = " + argInput + ".trim().isEmpty() ? new int[0] : java.util.Arrays.stream(" + argInput + ".trim().split(\"[\\\\s,]+\")).filter(s -> !s.isEmpty()).mapToInt(Integer::parseInt).toArray();";
+            case "long[]" -> "long[] " + argName + " = " + argInput + ".trim().isEmpty() ? new long[0] : java.util.Arrays.stream(" + argInput + ".trim().split(\"[\\\\s,]+\")).filter(s -> !s.isEmpty()).mapToLong(Long::parseLong).toArray();";
+            case "char[]" -> "char[] " + argName + " = " + argInput + ".replaceAll(\"\\\\r?\\\\n\", \"\").toCharArray();";
+            case "int[][]" -> "String[] " + argName + "Rows = " + argInput + ".trim().isEmpty() ? new String[0] : " + argInput + ".trim().split(\"\\\\r?\\\\n\");\n        int[][] " + argName + " = java.util.Arrays.stream(" + argName + "Rows).map(row -> java.util.Arrays.stream(row.trim().split(\"[\\\\s,]+\")).filter(s -> !s.isEmpty()).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);";
+            case "long[][]" -> "String[] " + argName + "Rows = " + argInput + ".trim().isEmpty() ? new String[0] : " + argInput + ".trim().split(\"\\\\r?\\\\n\");\n        long[][] " + argName + " = java.util.Arrays.stream(" + argName + "Rows).map(row -> java.util.Arrays.stream(row.trim().split(\"[\\\\s,]+\")).filter(s -> !s.isEmpty()).mapToLong(Long::parseLong).toArray()).toArray(long[][]::new);";
+            case "String[][]" -> "String[] " + argName + "Rows = " + argInput + ".trim().isEmpty() ? new String[0] : " + argInput + ".trim().split(\"\\\\r?\\\\n\");\n        String[][] " + argName + " = java.util.Arrays.stream(" + argName + "Rows).map(row -> row.trim().isEmpty() ? new String[0] : row.trim().split(\"[\\\\s,]+\")).toArray(String[][]::new);";
+            case "char[][]" -> "String[] " + argName + "Rows = " + argInput + ".split(\"\\r?\\n\");\n        char[][] " + argName + " = java.util.Arrays.stream(" + argName + "Rows).map(row -> row.trim().toCharArray()).toArray(char[][]::new);";
+            case "List<String>" -> "java.util.List<String> " + argName + " = " + argInput + ".trim().isEmpty() ? java.util.Collections.emptyList() : java.util.Arrays.asList(" + argInput + ".trim().split(\"[\\\\s,]+\"));";
+            case "List<Integer>" -> "java.util.List<Integer> " + argName + " = " + argInput + ".trim().isEmpty() ? java.util.Collections.emptyList() : java.util.Arrays.stream(" + argInput + ".trim().split(\"[\\\\s,]+\")).filter(s -> !s.isEmpty()).map(Integer::parseInt).boxed().toList();";
+            default -> "String " + argName + " = " + argInput + ";";
+        };
+    }
+
+    private static String buildJavaOutputExpression(String returnType, String expression) {
+        return switch (returnType) {
+            case "int", "long", "boolean", "String" -> expression;
+            case "char[]" -> "new String(" + expression + ")";
+            case "String[]", "int[]", "long[]" -> "java.util.Arrays.toString(" + expression + ")";
+            case "char[][]", "String[][]", "int[][]", "long[][]" -> "java.util.Arrays.deepToString(" + expression + ")";
+            default -> expression;
+        };
     }
 
     private String extractNetworkError(Throwable exception) {

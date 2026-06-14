@@ -1,8 +1,8 @@
 package com.codeforge.ai.controller;
 
 import com.codeforge.ai.dto.ApiResponse;
-import com.codeforge.ai.entity.Contest;
-import com.codeforge.ai.entity.ContestParticipation;
+import com.codeforge.ai.dto.ContestDto;
+import com.codeforge.ai.dto.ContestParticipationDto;
 import com.codeforge.ai.service.ContestService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,18 +26,18 @@ public class ContestController {
     private ContestService contestService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<Contest>>> getAllContests(
+    public ResponseEntity<ApiResponse<Page<ContestDto>>> getAllContests(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Contest> contests = contestService.getAllContests(pageable);
+        Page<ContestDto> contests = contestService.getAllContests(pageable);
         return ResponseEntity.ok()
                 .body(new ApiResponse<>(HttpStatus.OK.value(), "Contests retrieved successfully", contests));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Contest>> getContestById(@PathVariable Long id) {
-        Contest contest = contestService.getContestById(id);
+    public ResponseEntity<ApiResponse<ContestDto>> getContestById(@PathVariable Long id) {
+        ContestDto contest = contestService.getContestById(id);
         return ResponseEntity.ok()
                 .body(new ApiResponse<>(HttpStatus.OK.value(), "Contest retrieved successfully", contest));
     }
@@ -65,23 +65,23 @@ public class ContestController {
     }
 
     @GetMapping("/{id}/leaderboard")
-    public ResponseEntity<ApiResponse<Page<ContestParticipation>>> getLeaderboard(
+    public ResponseEntity<ApiResponse<Page<ContestParticipationDto>>> getLeaderboard(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<ContestParticipation> leaderboard = contestService.getContestLeaderboard(id, pageable);
+        Page<ContestParticipationDto> leaderboard = contestService.getContestLeaderboard(id, pageable);
         return ResponseEntity.ok()
                 .body(new ApiResponse<>(HttpStatus.OK.value(), "Leaderboard retrieved successfully", leaderboard));
     }
 
     @GetMapping("/user/my-contests")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<List<ContestParticipation>>> getUserContests() {
+    public ResponseEntity<ApiResponse<List<ContestParticipationDto>>> getUserContests() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
         
-        List<ContestParticipation> contests = contestService.getUserContests(userPrincipal.getId());
+        List<ContestParticipationDto> contests = contestService.getUserContests(userPrincipal.getId());
         return ResponseEntity.ok()
                 .body(new ApiResponse<>(HttpStatus.OK.value(), "User contests retrieved successfully", contests));
     }

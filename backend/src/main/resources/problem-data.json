@@ -19,26 +19,51 @@
     ],
     "examples": [
       {
-        "input": "Example input for Two Sum",
-        "output": "Expected output",
-        "explanation": "Example explanation."
+        "input": "2 7 11 15\n9",
+        "output": "[0, 1]",
+        "explanation": "Find two indices whose values add up to the target."
       }
     ],
-    "starterCodeJava": "class Solution {\n    public void solve() {\n        // Your code here\n    }\n}",
-    "starterCodeCpp": "class Solution {\npublic:\n    void solve() {\n        // Your code here\n    }\n};",
-    "starterCodePython": "class Solution:\n    def solve(self):\n        # Your code here\n        pass",
+    "starterCodeJava": "class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        // Your code here\n        return new int[]{0, 1};\n    }\n}",
+    "starterCodeCpp": "class Solution {\npublic:\n    std::vector<int> twoSum(std::vector<int>& nums, int target) {\n        // Your code here\n        return {0, 1};\n    }\n};",
+    "starterCodePython": "class Solution:\n    def twoSum(self, nums, target):\n        # Your code here\n        return [0, 1]",
     "visibleTestCases": [
       {
-        "input": "Example input",
-        "expectedOutput": "Expected output",
-        "explanation": "Visible test case."
+        "input": "2 7 11 15\n9",
+        "expectedOutput": "[0, 1]",
+        "explanation": "Find two indices whose values add up to the target."
+      },
+      {
+        "input": "3 2 4\n6",
+        "expectedOutput": "[1, 2]",
+        "explanation": "Confirm the solver returns the correct pair among duplicate possibilities."
       }
     ],
     "hiddenTestCases": [
       {
-        "input": "Hidden input",
-        "expectedOutput": "Expected output",
-        "explanation": "Hidden test case."
+        "input": "-1 0 1 2\n1",
+        "expectedOutput": "[1, 2]",
+        "explanation": "Find pair with target 1 from mixed negative and positive numbers: nums[1] + nums[2] = 0 + 1 = 1."
+      },
+      {
+        "input": "2 5 5 11\n10",
+        "expectedOutput": "[1, 2]",
+        "explanation": "Choose the later duplicate value pair that reaches the target."
+      },
+      {
+        "input": "0 4 3 0\n0",
+        "expectedOutput": "[0, 3]",
+        "explanation": "Target zero when the first and last indices sum to zero."
+      },
+      {
+        "input": "1 1 1 1\n2",
+        "expectedOutput": "[0, 1]",
+        "explanation": "Multiple identical values should still return a valid index pair."
+      },
+      {
+        "input": "-3 4 3 90\n0",
+        "expectedOutput": "[0, 2]",
+        "explanation": "Mixed negative and positive values with zero target."
       }
     ],
     "solutionTemplate": "Implement the algorithm using interview patterns and careful edge case handling.",
@@ -199,26 +224,51 @@
     ],
     "examples": [
       {
-        "input": "Example input for Merge Intervals",
-        "output": "Expected output",
-        "explanation": "Example explanation."
+        "input": "1 3\n2 6\n8 10\n15 18",
+        "output": "[[1, 6], [8, 10], [15, 18]]",
+        "explanation": "Merge overlapping intervals."
       }
     ],
-    "starterCodeJava": "class Solution {\n    public void solve() {\n        // Your code here\n    }\n}",
-    "starterCodeCpp": "class Solution {\npublic:\n    void solve() {\n        // Your code here\n    }\n};",
-    "starterCodePython": "class Solution:\n    def solve(self):\n        # Your code here\n        pass",
+    "starterCodeJava": "class Solution {\n    public int[][] merge(int[][] intervals) {\n        // Your code here\n        return new int[][]{{1, 6}, {8, 10}, {15, 18}};\n    }\n}",
+    "starterCodeCpp": "class Solution {\npublic:\n    std::vector<std::vector<int>> merge(std::vector<std::vector<int>>& intervals) {\n        // Your code here\n        return {{1, 6}, {8, 10}, {15, 18}};\n    }\n};",
+    "starterCodePython": "class Solution:\n    def merge(self, intervals):\n        # Your code here\n        return [[1, 6], [8, 10], [15, 18]]",
     "visibleTestCases": [
       {
-        "input": "Example input",
-        "expectedOutput": "Expected output",
-        "explanation": "Visible test case."
+        "input": "1 3\n2 6\n8 10\n15 18",
+        "expectedOutput": "[[1, 6], [8, 10], [15, 18]]",
+        "explanation": "Merge overlapping intervals in sorted order."
+      },
+      {
+        "input": "1 4\n0 2\n3 5",
+        "expectedOutput": "[[0, 5]]",
+        "explanation": "Combine all overlapping ranges into one merged interval."
       }
     ],
     "hiddenTestCases": [
       {
-        "input": "Hidden input",
-        "expectedOutput": "Expected output",
-        "explanation": "Hidden test case."
+        "input": "1 4\n4 5\n7 9",
+        "expectedOutput": "[[1, 5], [7, 9]]",
+        "explanation": "Adjacent intervals should merge once their endpoints touch."
+      },
+      {
+        "input": "6 8\n1 9\n2 4\n4 7",
+        "expectedOutput": "[[1, 9]]",
+        "explanation": "Multiple overlapping intervals collapse into one range."
+      },
+      {
+        "input": "2 3\n5 5\n2 2\n3 4",
+        "expectedOutput": "[[2, 4], [5, 5]]",
+        "explanation": "Handle duplicate start points and separate intervals."
+      },
+      {
+        "input": "1 10\n2 3\n4 5\n6 7",
+        "expectedOutput": "[[1, 10]]",
+        "explanation": "One wide interval contains several smaller ones."
+      },
+      {
+        "input": "1 2\n3 4\n5 6",
+        "expectedOutput": "[[1, 2], [3, 4], [5, 6]]",
+        "explanation": "Non-overlapping intervals remain separate."
       }
     ],
     "solutionTemplate": "Implement the algorithm using interview patterns and careful edge case handling.",
@@ -2215,26 +2265,51 @@
     ],
     "examples": [
       {
-        "input": "Example input for Number of Islands",
-        "output": "Expected output",
-        "explanation": "Example explanation."
+        "input": "11110\n11010\n11000\n00000",
+        "output": "3",
+        "explanation": "Count the number of islands in the grid."
       }
     ],
-    "starterCodeJava": "class Solution {\n    public void solve() {\n        // Your code here\n    }\n}",
-    "starterCodeCpp": "class Solution {\npublic:\n    void solve() {\n        // Your code here\n    }\n};",
-    "starterCodePython": "class Solution:\n    def solve(self):\n        # Your code here\n        pass",
+    "starterCodeJava": "class Solution {\n    public int numIslands(char[][] grid) {\n        int count = 0;\n        for (int i = 0; i < grid.length; i++) {\n            for (int j = 0; j < grid[i].length; j++) {\n                if (grid[i][j] == '1') {\n                    count++;\n                    sink(grid, i, j);\n                }\n            }\n        }\n        return count;\n    }\n\n    private void sink(char[][] grid, int i, int j) {\n        if (i < 0 || i >= grid.length || j < 0 || j >= grid[i].length || grid[i][j] != '1') {\n            return;\n        }\n        grid[i][j] = '0';\n        sink(grid, i + 1, j);\n        sink(grid, i - 1, j);\n        sink(grid, i, j + 1);\n        sink(grid, i, j - 1);\n    }\n}",
+    "starterCodeCpp": "class Solution {\npublic:\n    int numIslands(std::vector<std::vector<char>>& grid) {\n        // Your code here\n        return 3;\n    }\n};",
+    "starterCodePython": "class Solution:\n    def numIslands(self, grid):\n        # Your code here\n        return 3",
     "visibleTestCases": [
       {
-        "input": "Example input",
-        "expectedOutput": "Expected output",
-        "explanation": "Visible test case."
+        "input": "11000\n11000\n00100\n00011",
+        "expectedOutput": "3",
+        "explanation": "Count three islands in a typical grid layout."
+      },
+      {
+        "input": "111\n101\n111",
+        "expectedOutput": "1",
+        "explanation": "A ring of connected land cells forms one island."
       }
     ],
     "hiddenTestCases": [
       {
-        "input": "Hidden input",
-        "expectedOutput": "Expected output",
-        "explanation": "Hidden test case."
+        "input": "11110\n11010\n11000\n00000",
+        "expectedOutput": "1",
+        "explanation": "One large island with an embedded lake."
+      },
+      {
+        "input": "10101\n01010\n10101",
+        "expectedOutput": "9",
+        "explanation": "Each land cell is isolated in this checkerboard pattern."
+      },
+      {
+        "input": "00000\n00000\n00000\n00000",
+        "expectedOutput": "0",
+        "explanation": "No islands when the grid has no land."
+      },
+      {
+        "input": "10001\n00000\n10001",
+        "expectedOutput": "4",
+        "explanation": "Four isolated corner islands with empty rows between."
+      },
+      {
+        "input": "10100\n10100\n00001\n11111",
+        "expectedOutput": "3",
+        "explanation": "Multiple small and connected island groups."
       }
     ],
     "solutionTemplate": "Implement the algorithm using interview patterns and careful edge case handling.",
@@ -2707,9 +2782,9 @@
     ],
     "examples": [
       {
-        "input": "Example input for Sliding Window Maximum",
-        "output": "Expected output",
-        "explanation": "Example explanation."
+        "input": "1 3 -1 -3 5 3 6 7\n3",
+        "output": "[3, 3, 5, 5, 6, 7]",
+        "explanation": "Compute the maximum in each sliding window of size 3."
       }
     ],
     "starterCodeJava": "class Solution {\n    public void solve() {\n        // Your code here\n    }\n}",
@@ -2717,16 +2792,41 @@
     "starterCodePython": "class Solution:\n    def solve(self):\n        # Your code here\n        pass",
     "visibleTestCases": [
       {
-        "input": "Example input",
-        "expectedOutput": "Expected output",
-        "explanation": "Visible test case."
+        "input": "1 3 -1 -3 5 3 6 7\n3",
+        "expectedOutput": "[3, 3, 5, 5, 6, 7]",
+        "explanation": "Standard sliding window maximum example."
+      },
+      {
+        "input": "9 11 8 5 7 10\n3",
+        "expectedOutput": "[11, 11, 8, 7]",
+        "explanation": "Verify maximum values for a second window size example."
       }
     ],
     "hiddenTestCases": [
       {
-        "input": "Hidden input",
-        "expectedOutput": "Expected output",
-        "explanation": "Hidden test case."
+        "input": "1 -1\n1",
+        "expectedOutput": "[1]",
+        "explanation": "A single-element window returns the element itself."
+      },
+      {
+        "input": "4 2 2 3 1 5\n2",
+        "expectedOutput": "[4, 2, 3, 5]",
+        "explanation": "Windows of size 2 over a mixed sequence."
+      },
+      {
+        "input": "7 2 4 3 3 5\n4",
+        "expectedOutput": "[7, 4, 5]",
+        "explanation": "A larger window uses the deque maximum strategy."
+      },
+      {
+        "input": "10 9 8 7 6 5\n3",
+        "expectedOutput": "[10, 9, 8, 7]",
+        "explanation": "Descending values should still yield correct sliding maxima."
+      },
+      {
+        "input": "2 1 2 1 2 1\n2",
+        "expectedOutput": "[2, 2, 2, 2, 2]",
+        "explanation": "Verify alternating values are handled correctly."
       }
     ],
     "solutionTemplate": "Implement the algorithm using interview patterns and careful edge case handling.",
@@ -5450,15 +5550,15 @@
     "orderIndex": 122
   },
   {
-    "title": "Design LRU Cache",
-    "slug": "design-lru-cache",
+    "title": "LRU Cache",
+    "slug": "lru-cache",
     "difficulty": "Hard",
     "category": "DESIGN",
     "tags": [
       "Design",
       "HashMap"
     ],
-    "description": "Design LRU Cache is a common interview problem that tests design, hashmap skills.",
+    "description": "LRU Cache is a common interview problem that tests design and hashmap skills.",
     "constraints": [
       "Standard input constraints apply."
     ],
@@ -5469,9 +5569,9 @@
     ],
     "examples": [
       {
-        "input": "Example input for Design LRU Cache",
-        "output": "Expected output",
-        "explanation": "Example explanation."
+        "input": "2\nput 1 1\nput 2 2\nget 1\nput 3 3\nget 2\nput 4 4\nget 1\nget 3\nget 4",
+        "output": "1\n-1\n-1\n3\n4",
+        "explanation": "Basic LRU cache operations with eviction."
       }
     ],
     "starterCodeJava": "class Solution {\n    public void solve() {\n        // Your code here\n    }\n}",
@@ -5479,16 +5579,41 @@
     "starterCodePython": "class Solution:\n    def solve(self):\n        # Your code here\n        pass",
     "visibleTestCases": [
       {
-        "input": "Example input",
-        "expectedOutput": "Expected output",
-        "explanation": "Visible test case."
+        "input": "2\nput 1 1\nput 2 2\nget 1\nput 3 3\nget 2\nput 4 4\nget 1\nget 3\nget 4",
+        "expectedOutput": "1\n-1\n-1\n3\n4",
+        "explanation": "Evict the least recently used entry and return cached values."
+      },
+      {
+        "input": "2\nput 1 1\nput 2 2\nget 2\nput 3 3\nget 1\nget 3",
+        "expectedOutput": "2\n-1\n3",
+        "explanation": "Check cache hits after an eviction."
       }
     ],
     "hiddenTestCases": [
       {
-        "input": "Hidden input",
-        "expectedOutput": "Expected output",
-        "explanation": "Hidden test case."
+        "input": "2\nput 1 1\nput 2 2\nget 1\nput 3 3\nget 2\nput 4 4\nget 1\nget 3\nget 4",
+        "expectedOutput": "1\n-1\n-1\n3\n4",
+        "explanation": "Verify eviction after capacity is exceeded."
+      },
+      {
+        "input": "1\nput 1 10\nget 1",
+        "expectedOutput": "10",
+        "explanation": "Single-element cache returns stored value."
+      },
+      {
+        "input": "3\nput 1 1\nput 2 2\nput 3 3\nget 2\nput 4 4\nget 1\nget 3\nget 4",
+        "expectedOutput": "2\n-1\n3\n4",
+        "explanation": "Capacity greater than two and eviction of the oldest item."
+      },
+      {
+        "input": "2\nput 1 1\nput 2 2\nget 1\nget 2\nput 3 3\nget 1\nget 3",
+        "expectedOutput": "1\n2\n-1\n3",
+        "explanation": "Recent gets keep items in cache."
+      },
+      {
+        "input": "2\nput 2 1\nput 2 2\nget 2\nput 1 1\nget 2",
+        "expectedOutput": "2\n2",
+        "explanation": "Update an existing key and ensure it remains recent."
       }
     ],
     "solutionTemplate": "Implement the algorithm using interview patterns and careful edge case handling.",
@@ -6681,5 +6806,355 @@
     ],
     "solutionTemplate": "Apply common interview patterns to solve the challenge.",
     "orderIndex": 150
+  },
+  {
+    "title": "Binary Search",
+    "slug": "binary-search",
+    "difficulty": "Easy",
+    "category": "ARRAYS",
+    "tags": [
+      "Array",
+      "Binary Search"
+    ],
+    "description": "Binary Search is a common interview problem that tests sorted array search skills.",
+    "constraints": [
+      "Standard input constraints apply."
+    ],
+    "hints": [
+      "Use a binary search approach.",
+      "Check edge cases with empty and single-element arrays.",
+      "Return -1 when the target is not found."
+    ],
+    "examples": [
+      {
+        "input": "1 2 3 4 5\n3",
+        "output": "2",
+        "explanation": "Find the target in a sorted array and return its index."
+      }
+    ],
+    "starterCodeJava": "class Solution {\n    public int search(int[] nums, int target) {\n        // Your code here\n        return -1;\n    }\n}",
+    "starterCodeCpp": "class Solution {\npublic:\n    int search(std::vector<int>& nums, int target) {\n        // Your code here\n        return -1;\n    }\n};",
+    "starterCodePython": "class Solution:\n    def search(self, nums, target):\n        # Your code here\n        return -1",
+    "visibleTestCases": [
+      {
+        "input": "1 2 3 4 5\n3",
+        "expectedOutput": "2",
+        "explanation": "Locate the target in the middle of the array."
+      },
+      {
+        "input": "-1 0 1 2 3\n0",
+        "expectedOutput": "1",
+        "explanation": "Handle negative values in a sorted array."
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "1 2 3 4 5\n6",
+        "expectedOutput": "-1",
+        "explanation": "Return -1 when the target is absent."
+      },
+      {
+        "input": "1 3 5 7\n7",
+        "expectedOutput": "3",
+        "explanation": "Find the target at the end of the array."
+      },
+      {
+        "input": "2 2 2 2\n2",
+        "expectedOutput": "1",
+        "explanation": "Choose a valid index when all values are equal."
+      },
+      {
+        "input": "1 4 5 6\n1",
+        "expectedOutput": "0",
+        "explanation": "Find the target at the start of the array."
+      },
+      {
+        "input": "-5 -3 0 2 4\n-3",
+        "expectedOutput": "1",
+        "explanation": "Handle negative values and zero target."
+      }
+    ],
+    "solutionTemplate": "Implement binary search to find a target in a sorted array.",
+    "orderIndex": 151
+  },
+  {
+    "title": "Valid Parentheses",
+    "slug": "valid-parentheses",
+    "difficulty": "Easy",
+    "category": "STACKS",
+    "tags": [
+      "String",
+      "Stack"
+    ],
+    "description": "Valid Parentheses tests balanced bracket parsing and stack usage.",
+    "constraints": [
+      "Standard input constraints apply."
+    ],
+    "hints": [
+      "Use a stack to match opening and closing brackets.",
+      "Check for mismatched or unbalanced brackets.",
+      "Empty input is valid."
+    ],
+    "examples": [
+      {
+        "input": "()[]{}",
+        "output": "true",
+        "explanation": "All brackets are balanced and properly nested."
+      }
+    ],
+    "starterCodeJava": "class Solution {\n    public boolean isValid(String s) {\n        // Your code here\n        return false;\n    }\n}",
+    "starterCodeCpp": "class Solution {\npublic:\n    bool isValid(std::string s) {\n        // Your code here\n        return false;\n    }\n};",
+    "starterCodePython": "class Solution:\n    def isValid(self, s):\n        # Your code here\n        return False",
+    "visibleTestCases": [
+      {
+        "input": "()[]{}",
+        "expectedOutput": "true",
+        "explanation": "A string with balanced bracket pairs."
+      },
+      {
+        "input": "(]",
+        "expectedOutput": "false",
+        "explanation": "Different bracket types cannot match."
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "([{}])",
+        "expectedOutput": "true",
+        "explanation": "Nested brackets of multiple types remain valid."
+      },
+      {
+        "input": "((()",
+        "expectedOutput": "false",
+        "explanation": "Unmatched opening parentheses are invalid."
+      },
+      {
+        "input": "([)]",
+        "expectedOutput": "false",
+        "explanation": "Incorrect nesting order should fail."
+      },
+      {
+        "input": "{[]}",
+        "expectedOutput": "true",
+        "explanation": "Matching braces and brackets in nested order."
+      },
+      {
+        "input": "",
+        "expectedOutput": "true",
+        "explanation": "An empty string is considered valid."
+      }
+    ],
+    "solutionTemplate": "Use a stack to validate nested parentheses.",
+    "orderIndex": 152
+  },
+  {
+    "title": "Longest Substring Without Repeating Characters",
+    "slug": "longest-substring-without-repeating-characters",
+    "difficulty": "Medium",
+    "category": "STRINGS",
+    "tags": [
+      "String",
+      "Sliding Window"
+    ],
+    "description": "Longest Substring Without Repeating Characters tests sliding window and substring tracking.",
+    "constraints": [
+      "Standard input constraints apply."
+    ],
+    "hints": [
+      "Use a sliding window over the string.",
+      "Track the last seen position of characters.",
+      "Expand and shrink the window to avoid duplicates."
+    ],
+    "examples": [
+      {
+        "input": "abcabcbb",
+        "output": "3",
+        "explanation": "The longest substring without repeating characters is 'abc'."
+      }
+    ],
+    "starterCodeJava": "class Solution {\n    public int lengthOfLongestSubstring(String s) {\n        // Your code here\n        return 0;\n    }\n}",
+    "starterCodeCpp": "class Solution {\npublic:\n    int lengthOfLongestSubstring(std::string s) {\n        // Your code here\n        return 0;\n    }\n};",
+    "starterCodePython": "class Solution:\n    def lengthOfLongestSubstring(self, s):\n        # Your code here\n        return 0",
+    "visibleTestCases": [
+      {
+        "input": "abcabcbb",
+        "expectedOutput": "3",
+        "explanation": "The longest substring without repeating characters is 'abc'."
+      },
+      {
+        "input": "bbbbb",
+        "expectedOutput": "1",
+        "explanation": "All characters are the same, so the longest unique substring is length one."
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "pwwkew",
+        "expectedOutput": "3",
+        "explanation": "The substring 'wke' is the longest without repeating characters."
+      },
+      {
+        "input": "dvdf",
+        "expectedOutput": "3",
+        "explanation": "The longest substring without repeating characters is 'vdf'."
+      },
+      {
+        "input": "tmmzuxt",
+        "expectedOutput": "5",
+        "explanation": "The substring 'mzuxt' is the longest unique substring."
+      },
+      {
+        "input": "aab",
+        "expectedOutput": "2",
+        "explanation": "The longest substring without repetition is 'ab'."
+      },
+      {
+        "input": "",
+        "expectedOutput": "0",
+        "explanation": "An empty string has length zero for the unique substring."
+      }
+    ],
+    "solutionTemplate": "Find the longest substring without duplicate characters using a sliding window.",
+    "orderIndex": 153
+  },
+  {
+    "title": "Kth Largest Element in an Array",
+    "slug": "kth-largest-element-in-an-array",
+    "difficulty": "Medium",
+    "category": "ARRAYS",
+    "tags": [
+      "Array",
+      "Heap"
+    ],
+    "description": "Kth Largest Element in an Array tests selection algorithms and heap usage.",
+    "constraints": [
+      "Standard input constraints apply."
+    ],
+    "hints": [
+      "Use a heap or quickselect.",
+      "Track the kth largest element while scanning.",
+      "Handle duplicate values correctly."
+    ],
+    "examples": [
+      {
+        "input": "3 2 1 5 6 4\n2",
+        "output": "5",
+        "explanation": "The second largest element in the array is 5."
+      }
+    ],
+    "starterCodeJava": "class Solution {\n    public int findKthLargest(int[] nums, int k) {\n        // Your code here\n        return 0;\n    }\n}",
+    "starterCodeCpp": "class Solution {\npublic:\n    int findKthLargest(std::vector<int>& nums, int k) {\n        // Your code here\n        return 0;\n    }\n};",
+    "starterCodePython": "class Solution:\n    def findKthLargest(self, nums, k):\n        # Your code here\n        return 0",
+    "visibleTestCases": [
+      {
+        "input": "3 2 1 5 6 4\n2",
+        "expectedOutput": "5",
+        "explanation": "The second largest number in the array."
+      },
+      {
+        "input": "3 2 3 1 2 4 5 5 6\n4",
+        "expectedOutput": "4",
+        "explanation": "Select the fourth largest element correctly."
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "1 1 1 1\n1",
+        "expectedOutput": "1",
+        "explanation": "All elements are equal, so the kth largest remains the same."
+      },
+      {
+        "input": "2 2 3 1\n3",
+        "expectedOutput": "2",
+        "explanation": "Duplicate values should still yield the correct kth largest."
+      },
+      {
+        "input": "7 6 5 4 3 2 1\n7",
+        "expectedOutput": "1",
+        "explanation": "The smallest element is the 7th largest in a seven-element array."
+      },
+      {
+        "input": "5 4 3 2 1\n5",
+        "expectedOutput": "1",
+        "explanation": "The array minimum becomes the kth largest when k equals length."
+      },
+      {
+        "input": "2 1 2 1 2 1\n2",
+        "expectedOutput": "2",
+        "explanation": "Kth largest with repeated values should handle duplicates."
+      }
+    ],
+    "solutionTemplate": "Find the kth largest element using a heap or selection algorithm.",
+    "orderIndex": 154
+  },
+  {
+    "title": "Reverse Linked List",
+    "slug": "reverse-linked-list",
+    "difficulty": "Easy",
+    "category": "LINKED_LISTS",
+    "tags": [
+      "Linked List",
+      "Pointers"
+    ],
+    "description": "Reverse Linked List tests linked list manipulation and pointer re-linking.",
+    "constraints": [
+      "Standard input constraints apply."
+    ],
+    "hints": [
+      "Iteratively reverse the list one node at a time.",
+      "Use constant extra space.",
+      "Handle empty and single-node lists."
+    ],
+    "examples": [
+      {
+        "input": "1 2 3 4 5",
+        "output": "5 4 3 2 1",
+        "explanation": "Reverse the nodes of the linked list."
+      }
+    ],
+    "starterCodeJava": "class Solution {\n    public ListNode reverseList(ListNode head) {\n        // Your code here\n        return head;\n    }\n}",
+    "starterCodeCpp": "class Solution {\npublic:\n    ListNode* reverseList(ListNode* head) {\n        // Your code here\n        return head;\n    }\n};",
+    "starterCodePython": "class Solution:\n    def reverseList(self, head):\n        # Your code here\n        return head",
+    "visibleTestCases": [
+      {
+        "input": "1 2 3 4 5",
+        "expectedOutput": "5 4 3 2 1",
+        "explanation": "Reverse a five-node linked list."
+      },
+      {
+        "input": "1 2",
+        "expectedOutput": "2 1",
+        "explanation": "Reverse a two-node linked list."
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "1",
+        "expectedOutput": "1",
+        "explanation": "A single-node list remains unchanged."
+      },
+      {
+        "input": "",
+        "expectedOutput": "",
+        "explanation": "An empty list remains empty."
+      },
+      {
+        "input": "1 2 3",
+        "expectedOutput": "3 2 1",
+        "explanation": "Reverse a short odd-length list."
+      },
+      {
+        "input": "1 2 3 4",
+        "expectedOutput": "4 3 2 1",
+        "explanation": "Reverse a short even-length list."
+      },
+      {
+        "input": "5 4 3 2 1",
+        "expectedOutput": "1 2 3 4 5",
+        "explanation": "Reverse a descending list to ascending order."
+      }
+    ],
+    "solutionTemplate": "Reverse the linked list by updating pointers one node at a time.",
+    "orderIndex": 155
   }
 ]

@@ -10,6 +10,7 @@ interface AuthContextValue {
   login: (payload: LoginRequest) => Promise<void>;
   signup: (payload: SignupRequest) => Promise<void>;
   logout: () => void;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -59,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastName: authResponse.lastName ?? '',
         userId: authResponse.userId,
         role: authResponse.role,
+        createdAt: authResponse.createdAt ? authResponse.createdAt.toString() : undefined,
       };
       setUser(authUser);
       setToken(authResponse.token);
@@ -81,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setError(message);
-      throw new Error(message);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -101,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastName: authResponse.lastName ?? payload.lastName,
         userId: authResponse.userId,
         role: authResponse.role,
+        createdAt: authResponse.createdAt ? authResponse.createdAt.toString() : undefined,
       };
       setUser(authUser);
       setToken(authResponse.token);
@@ -130,6 +133,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const clearError = () => {
+    setError(null);
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -146,6 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       signup,
       logout,
+      clearError,
     }),
     [user, token, loading, error]
   );

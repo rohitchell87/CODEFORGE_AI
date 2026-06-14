@@ -4,9 +4,11 @@ import com.codeforge.ai.dto.CodeRunRequest;
 import com.codeforge.ai.dto.CodeRunResponse;
 import com.codeforge.ai.dto.CodeSubmissionResult;
 import com.codeforge.ai.dto.CreateSubmissionRequest;
+import com.codeforge.ai.exception.SubmissionConfigurationException;
+import com.codeforge.ai.exception.ResourceNotFoundException;
 import com.codeforge.ai.security.UserPrincipal;
 import com.codeforge.ai.service.CodeExecutionService;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,17 +30,9 @@ public class CodeExecutionController {
 
     @PostMapping("/run")
     public ResponseEntity<CodeRunResponse> runCode(@RequestBody CodeRunRequest request) {
-        log.info("RUN ENDPOINT HIT");
-        log.info("MOCK RUN RESPONSE RETURNED");
-        CodeRunResponse mockRun = new CodeRunResponse();
-        mockRun.setOutput("[0,1]");
-        mockRun.setStdout("[0,1]");
-        mockRun.setStderr(null);
-        mockRun.setCompileOutput(null);
-        mockRun.setRuntime("52 ms");
-        mockRun.setMemory("43 MB");
-        mockRun.setStatus("Accepted");
-        return ResponseEntity.ok(mockRun);
+        log.info("RUN ENDPOINT HIT for problemId={}", request.getProblemId());
+        CodeRunResponse runResult = executionService.runCode(request);
+        return ResponseEntity.ok(runResult);
     }
 
     @PostMapping("/submit")
@@ -76,21 +70,51 @@ public class CodeExecutionController {
         
         log.info("Authenticated submit by userId={} email={}", userPrincipal.getId(), userPrincipal.getEmail());
 
-        CodeSubmissionResult submissionResult = executionService.submitCode(userPrincipal.getId(), request);
-        log.info("Submission result: status={} passed={}/{} runtime={} memory={}",
-                submissionResult.getStatus(), submissionResult.getPassed(), submissionResult.getTotal(),
-                submissionResult.getRuntime(), submissionResult.getMemory());
+        try {
+            CodeSubmissionResult submissionResult = executionService.submitCode(userPrincipal.getId(), request);
+            log.info("Submission result: status={} passed={}/{} runtime={} memory={}",
+                    submissionResult.getStatus(), submissionResult.getPassed(), submissionResult.getTotal(),
+                    submissionResult.getRuntime(), submissionResult.getMemory());
 
-        System.out.println("SUBMISSION COMPLETED SUCCESSFULLY");
-        return ResponseEntity.ok(Map.of(
-                "status", submissionResult.getStatus(),
-                "stdout", submissionResult.getCases() != null && !submissionResult.getCases().isEmpty()
-                        ? submissionResult.getCases().get(0).getOutput() : null,
-                "runtime", submissionResult.getRuntime(),
-                "memory", submissionResult.getMemory(),
-                "passed", submissionResult.getPassed(),
-                "total", submissionResult.getTotal(),
-                "cases", submissionResult.getCases()
-        ));
+            System.out.println("SUBMISSION COMPLETED SUCCESSFULLY");
+            Map<String, Object> responseBody = new HashMap<>();
+            responseBody.put("status", submissionResult.getStatus());
+            responseBody.put("stdout", submissionResult.getCases() != null && !submissionResult.getCases().isEmpty()
+                    ? submissionResult.getCases().get(0).getOutput() : null);
+            responseBody.put("runtime", submissionResult.getRuntime());
+            responseBody.put("memory", submissionResult.getMemory());
+            responseBody.put("passed", submissionResult.getPassed());
+            responseBody.put("total", submissionResult.getTotal());
+            responseBody.put("cases", submissionResult.getCases());
+            return ResponseEntity.ok(responseBody);
+        } catch (SubmissionConfigurationException ex) {
+            log.error("Submission configuration error for userId={} problemId={}: {}", userPrincipal.getId(), request.getProblemId(), ex.getMessage(), ex);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "CONFIG_ERROR",
+                    "message", ex.getMessage()
+            ));
+        } catch (ResourceNotFoundException ex) {
+            log.error("Submission resource not found for userId={} problemId={}: {}", userPrincipal.getId(), request.getProblemId(), ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "status", "ERROR",
+                    "message", ex.getMessage()
+            ));
+        } catch (IllegalArgumentException ex) {
+            log.error("Submission validation error for userId={} problemId={}: {}", userPrincipal.getId(), request.getProblemId(), ex.getMessage(), ex);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "ERROR",
+                    "message", ex.getMessage()
+            ));
+        } catch (Exception ex) {
+            log.error("Unexpected submission error for userId={} problemId={}: {}", userPrincipal.getId(), request.getProblemId(), ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "ERROR",
+                    "message", ex.getMessage() != null ? ex.getMessage() : "Unexpected error during submission"));
+        }
     }
 }
+
+
+
+
+

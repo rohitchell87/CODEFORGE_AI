@@ -74,8 +74,8 @@ function AiPage() {
   );
 
   return (
-    <div className="h-full overflow-hidden">
-      <div className="h-full overflow-y-auto space-y-8 px-4 py-5">
+    <div className="w-full">
+      <div className="space-y-6 px-4 py-5">
         <section className="rounded-2xl border border-white/10 bg-black p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>

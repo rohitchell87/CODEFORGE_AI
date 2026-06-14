@@ -20,6 +20,9 @@ public class SubmissionDto {
     private Boolean isAccepted;
     private Double executionTime;
     private Double memoryUsage;
+    private Integer runtimeMs;
+    private Integer memoryKb;
+    private String verdict;
     private String language;
     private String executionStatus;
     private Integer passedTests;

@@ -42,8 +42,12 @@ api.interceptors.response.use(
       configBaseURL: error?.config?.baseURL,
     });
     if (error?.response?.status === 401 || error?.response?.status === 403) {
-      logout();
-      window.location.href = '/login';
+      const requestUrl = error?.config?.url || '';
+      const isAuthEndpoint = /\/auth\/(login|signup|forgot-password|password-reset)/.test(requestUrl);
+      if (!isAuthEndpoint) {
+        logout();
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

@@ -29,4 +29,10 @@ public class SignupRequest {
 
     @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
+
+    @NotBlank(message = "Security question is required")
+    private String securityQuestion;
+
+    @NotBlank(message = "Security answer is required")
+    private String securityAnswer;
 }

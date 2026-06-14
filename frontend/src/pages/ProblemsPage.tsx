@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { getProblems } from '../services/problemService';
 import { runCode, submitCode } from '../services/codeService';
+import { fetchProblemSubmissions } from '../services/submissionService';
 import { requestAiHint, AiResponse } from '../services/aiService';
 import { useAuth } from '../context/AuthContext';
-import type { Language, ProblemSummary } from '../types/problem';
+import type { Language, ProblemSummary, SubmissionDto } from '../types/problem';
 
 type ExecutionResult = {
   status: string;
@@ -14,7 +15,7 @@ type ExecutionResult = {
   stdout?: string;
   passed?: number;
   total?: number;
-  cases?: Array<{ name: string; status: string; output?: string; expected?: string }>;
+  cases?: Array<{ name: string; status: string; input?: string; output?: string; expected?: string }>;
 };
 
 const NAVBAR_HEIGHT = 60;
@@ -66,6 +67,9 @@ export default function ProblemsPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'Description' | 'Editorial' | 'Solutions' | 'Submissions'>('Description');
+  const [problemSubmissions, setProblemSubmissions] = useState<SubmissionDto[]>([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissionsError, setSubmissionsError] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
@@ -123,6 +127,31 @@ export default function ProblemsPage() {
   }, [selected, language]);
 
   useEffect(() => {
+    const loadSubmissions = async () => {
+      if (!selected) {
+        setProblemSubmissions([]);
+        setSubmissionsError(null);
+        setSubmissionsLoading(false);
+        return;
+      }
+
+      setSubmissionsLoading(true);
+      setSubmissionsError(null);
+      try {
+        const submissions = await fetchProblemSubmissions(selected.id);
+        setProblemSubmissions(submissions);
+      } catch (err: any) {
+        setProblemSubmissions([]);
+        setSubmissionsError(err?.response?.data?.message || err?.message || 'Unable to load submissions for this problem.');
+      } finally {
+        setSubmissionsLoading(false);
+      }
+    };
+
+    loadSubmissions();
+  }, [selected]);
+
+  useEffect(() => {
     return () => {
       if (autosaveRef.current) {
         window.clearTimeout(autosaveRef.current);
@@ -134,7 +163,9 @@ export default function ProblemsPage() {
     () =>
       problems.filter((problem) => {
         const matchesSearch = problem.title.toLowerCase().includes(search.toLowerCase());
-        const matchesDifficulty = difficultyFilter === 'All' || problem.difficulty === difficultyFilter;
+        const matchesDifficulty =
+          difficultyFilter === 'All' ||
+          problem.difficulty.toUpperCase() === difficultyFilter.toUpperCase();
         return matchesSearch && matchesDifficulty;
       }),
     [problems, search, difficultyFilter]
@@ -158,32 +189,68 @@ export default function ProblemsPage() {
       return;
     }
 
-    const payload = { language: languageMap[language], code, customInput };
-    console.log('Run payload:', payload);
+    // Run only against visible/sample test cases. If none, run as a single custom run and show output only.
+    const sampleCases = selected.visibleTestCases ?? [];
 
     setIsRunning(true);
     setExecutionError(null);
     setExecutionResult(null);
-    setConsoleText('Running...');
+
+    if (sampleCases.length === 0) {
+      setConsoleText('No sample test cases configured. Running with provided input...');
+      try {
+        const response = await runCode({ problemId: selected.id, language: languageMap[language], code, customInput });
+        setExecutionResult({
+          status: 'Executed',
+          runtime: response.runtime || 'N/A',
+          memory: response.memory || 'N/A',
+          output: response.output ?? response.stdout ?? '',
+          passed: 0,
+          total: 0,
+          cases: [],
+        });
+        setConsoleText(`No sample test cases configured.\n\n${response.output ?? response.stdout ?? 'No output'}`);
+      } catch (err: any) {
+        console.error('Run error:', err);
+        const message = err?.response?.data?.message || err?.message || 'Failed to execute code';
+        setConsoleText(message);
+        setExecutionError(message);
+        setExecutionResult({ status: 'Error', runtime: 'N/A', memory: 'N/A', cases: [] });
+      } finally {
+        setIsRunning(false);
+      }
+
+      return;
+    }
+
+    setConsoleText('Running sample tests...');
 
     try {
-      const response = await runCode(payload);
-      console.log('Run response:', response);
+      const response = await runCode({ problemId: selected.id, language: languageMap[language], code });
+      const results: ExecutionResult['cases'] = (response.cases ?? []).map((caseResult) => ({
+        name: caseResult.name,
+        status: caseResult.status,
+        input: caseResult.input,
+        output: caseResult.output ?? '',
+        expected: caseResult.expected ?? '',
+      }));
+      const passedCount = results.filter((r) => r.status?.toLowerCase() === 'passed').length;
+
       setExecutionResult({
-        status: response.status || 'Unknown',
+        status: response.status || (passedCount === results.length ? 'All Passed' : 'Run Completed'),
         runtime: response.runtime || 'N/A',
         memory: response.memory || 'N/A',
-        passed: 0,
-        total: 0,
-        cases: [{ name: 'Run', status: response.status || 'Unknown', output: response.output }],
+        passed: passedCount,
+        total: results.length,
+        cases: results,
       });
-      setConsoleText(response.output || 'No output');
+      setConsoleText(response.output ?? response.stdout ?? '');
     } catch (err: any) {
       console.error('Run error:', err);
       const message = err?.response?.data?.message || err?.message || 'Failed to execute code';
       setConsoleText(message);
       setExecutionError(message);
-      setExecutionResult({ status: 'Error', runtime: 'N/A', memory: 'N/A', passed: 0, total: 0, cases: [] });
+      setExecutionResult({ status: 'Error', runtime: 'N/A', memory: 'N/A', cases: [] });
     } finally {
       setIsRunning(false);
     }
@@ -195,6 +262,19 @@ export default function ProblemsPage() {
 
     if (!selected) {
       setConsoleText('Select a problem before submitting code.');
+      return;
+    }
+
+    if (!token) {
+      setConsoleText('You must be logged in to submit code. Please sign in and try again.');
+      return;
+    }
+
+    // If hidden tests are not configured, short-circuit with a friendly message.
+    const hidden = selected.hiddenTestCases ?? [];
+    if (!hidden.length) {
+      setConsoleText('Problem has no hidden test cases configured.');
+      setExecutionResult({ status: 'No Hidden Tests', runtime: 'N/A', memory: 'N/A', passed: 0, total: 0, cases: [] });
       return;
     }
 
@@ -217,17 +297,26 @@ export default function ProblemsPage() {
         stdout: response.stdout,
         runtime: response.runtime || 'N/A',
         memory: response.memory || 'N/A',
-        passed: response.passed,
-        total: response.total,
-        cases: response.cases,
+        passed: typeof response.passed === 'number' ? response.passed : undefined,
+        total: typeof response.total === 'number' ? response.total : undefined,
+        cases: response.cases ?? [],
       });
       setConsoleText(`Submission ${response.status}.`);
     } catch (err: any) {
       console.error('Submit error:', err);
-      const message = err?.response?.data?.message || err?.message || 'Failed to submit code';
-      setConsoleText(message);
-      setExecutionError(message);
-      setExecutionResult({ status: 'Error', runtime: 'N/A', memory: 'N/A', passed: 0, total: 0, cases: [] });
+      const bodyMessage = err?.response?.data?.message || err?.message || 'Failed to submit code';
+      // Handle known configuration errors gracefully
+      if (bodyMessage && bodyMessage.toString().toLowerCase().includes('hidden test')) {
+        setConsoleText('Problem has no hidden test cases configured.');
+        setExecutionResult({ status: 'No Hidden Tests', runtime: 'N/A', memory: 'N/A', cases: [] });
+      } else if (err?.response?.status === 401 || err?.response?.status === 403) {
+        setConsoleText('You must be logged in to submit code. Please sign in and try again.');
+        setExecutionError('Authentication required');
+      } else {
+        setConsoleText(bodyMessage);
+        setExecutionError(bodyMessage);
+        setExecutionResult({ status: 'Error', runtime: 'N/A', memory: 'N/A', cases: [] });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -272,40 +361,93 @@ export default function ProblemsPage() {
     }
   };
 
+  const editorialContent = useMemo(() => {
+    if (!selected) return '';
+
+    const hints = selected.hints?.trim();
+    if (hints) {
+      return hints;
+    }
+
+    const summaryParts = [
+      `Problem: ${selected.title}`,
+      `Difficulty: ${selected.difficulty}`,
+      selected.tags?.length ? `Tags: ${selected.tags.join(', ')}` : null,
+      '',
+      selected.description,
+    ].filter(Boolean) as string[];
+
+    if (selected.exampleInput || selected.exampleOutput) {
+      summaryParts.push('', 'Example', `Input: ${selected.exampleInput}`, `Output: ${selected.exampleOutput}`);
+    }
+
+    if (selected.constraints) {
+      summaryParts.push('', 'Constraints', selected.constraints);
+    }
+
+    summaryParts.push('', 'Suggested approach', 'Identify the target value and use a map to track required complements while iterating through the array. Return the two indices when the pair is found.');
+    return summaryParts.join('\n');
+  }, [selected]);
+
+  const solutionCode = useMemo(() => {
+    if (!selected) return '';
+
+    const problemSolution = selected.sampleSolution?.trim() || selected.solutionTemplate?.trim();
+    if (problemSolution) {
+      return problemSolution;
+    }
+
+    if (language === 'Java' && selected.starterCodeJava?.trim()) {
+      return selected.starterCodeJava.trim();
+    }
+    if (language === 'C++' && selected.starterCodeCpp?.trim()) {
+      return selected.starterCodeCpp.trim();
+    }
+    if (language === 'Python' && selected.starterCodePython?.trim()) {
+      return selected.starterCodePython.trim();
+    }
+
+    return CODE_TEMPLATES[language] ?? '// No solution code available for this problem.';
+  }, [selected, language]);
+
   const toggleAi = () => setAiOpen((current) => !current);
 
   return (
-    <div style={{ background: '#000000', height: '100%', color: '#FFFFFF', overflow: 'hidden', width: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ background: '#000000', height: '100%', color: '#FFFFFF', width: '100%', display: 'flex', flexDirection: 'column' }}>
       <main
         style={{
-          height: '100%',
-          display: 'grid',
-          gridTemplateColumns: '1fr',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
           gap: 12,
           boxSizing: 'border-box',
-          overflow: 'hidden',
+          minHeight: 0,
         }}
       >
         <section
           style={{
-            display: 'grid',
-            gridTemplateColumns: selected ? '1fr 1fr' : '350px 1fr',
-            gap: 12,
-            overflow: 'hidden',
-            transition: 'grid-template-columns 240ms ease',
-            minHeight: 0,
-          }}
+              display: 'grid',
+              gridTemplateColumns: 'minmax(500px, 40%) minmax(700px, 60%)',
+              flex: 1,
+              gap: 12,
+              transition: 'all 240ms ease',
+              minHeight: 0,
+              alignItems: 'stretch',
+            }}
         >
           <div
             style={{
+              // left problem panel: fixed to viewport height and scrolls internally
               display: 'flex',
               flexDirection: 'column',
               background: '#000000',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 10,
               padding: 16,
-              overflow: 'hidden',
               minHeight: 0,
+              height: '100%',
+              overflowY: 'auto',
+              overflowX: 'hidden'
             }}
           >
             {!selected ? (
@@ -359,7 +501,7 @@ export default function ProblemsPage() {
                 </div>
               </>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <div style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                   <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>{selected.difficulty} · {selected.acceptanceRate}% accepted</div>
                   <h2 style={{ margin: '10px 0 0', fontSize: 24, lineHeight: 1.1 }}>{selected.title}</h2>
@@ -393,17 +535,57 @@ export default function ProblemsPage() {
                       <div style={panelHeadingStyle}>Constraints</div>
                       <p style={panelTextStyle}>{selected.constraints}</p>
                       <div style={panelHeadingStyle}>Hints</div>
-                      <p style={panelTextStyle}>{selected.sampleSolution}</p>
+                      <p style={panelTextStyle}>{selected.hints || 'No hints available for this problem.'}</p>
                     </div>
                   )}
                   {activeTab === 'Editorial' && (
-                    <div style={panelTextStyle}>Editorial content is not available yet. Use the problem statement and run your code to validate your approach.</div>
+                    <div style={{ paddingRight: 8 }}>
+                      <div style={panelHeadingStyle}>Editorial</div>
+                      <pre style={codeBlockStyle}>{editorialContent}</pre>
+                    </div>
                   )}
                   {activeTab === 'Solutions' && (
-                    <div style={panelTextStyle}>Solutions are hidden until you submit your implementation. Focus on the editor and test output.</div>
+                    <div style={{ paddingRight: 8 }}>
+                      <div style={panelHeadingStyle}>Solution</div>
+                      <pre style={codeBlockStyle}>{solutionCode}</pre>
+                    </div>
                   )}
                   {activeTab === 'Submissions' && (
-                    <div style={panelTextStyle}>No submissions yet. Run code or submit to see results.</div>
+                    <div style={{ paddingRight: 8 }}>
+                      <div style={panelHeadingStyle}>Submissions</div>
+                      {submissionsLoading ? (
+                        <p style={panelTextStyle}>Loading submissions...</p>
+                      ) : submissionsError ? (
+                        <p style={panelTextStyle}>{submissionsError}</p>
+                      ) : problemSubmissions.length > 0 ? (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                              <tr>
+                                {['Status', 'Runtime', 'Memory', 'Passed', 'Submitted'].map((header) => (
+                                  <th key={header} style={{ textAlign: 'left', padding: '10px 12px', color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>
+                                    {header}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {problemSubmissions.map((submission) => (
+                                <tr key={submission.id} style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                                  <td style={{ padding: '10px 12px', color: '#FFFFFF' }}>{submission.executionStatus ?? 'Unknown'}</td>
+                                  <td style={{ padding: '10px 12px', color: '#FFFFFF' }}>{submission.executionTime != null ? `${submission.executionTime.toFixed(2)} s` : 'N/A'}</td>
+                                  <td style={{ padding: '10px 12px', color: '#FFFFFF' }}>{submission.memoryUsage != null ? `${submission.memoryUsage.toFixed(0)} KB` : 'N/A'}</td>
+                                  <td style={{ padding: '10px 12px', color: '#FFFFFF' }}>{submission.passedTests != null ? `${submission.passedTests}/${submission.totalTests ?? 0}` : 'N/A'}</td>
+                                  <td style={{ padding: '10px 12px', color: '#FFFFFF' }}>{new Date(submission.submittedAt).toLocaleString()}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p style={panelTextStyle}>No submissions found for this problem yet.</p>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -412,13 +594,15 @@ export default function ProblemsPage() {
 
           <div
             style={{
+              // right editor/console column: fixed within viewport, must not scroll the page
               display: 'flex',
               flexDirection: 'column',
               background: '#000000',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 10,
-              overflow: 'hidden',
               minHeight: 0,
+              height: '100%',
+              overflow: 'hidden'
             }}
           >
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', padding: 16, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -450,7 +634,7 @@ export default function ProblemsPage() {
               </div>
             </div>
 
-            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <div style={{ height: '58%', minHeight: 0, display: 'flex' }}>
               <Editor
                 height="100%"
                 language={languageMap[language]}
@@ -464,7 +648,7 @@ export default function ProblemsPage() {
               />
             </div>
 
-            <div style={{ height: 340, flexShrink: 0, maxHeight: 340, borderTop: '1px solid #1f1f1f', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#000000' }}>
+            <div style={{ height: '42%', minHeight: 0, borderTop: '1px solid #1f1f1f', display: 'flex', flexDirection: 'column', background: '#000000' }}>
               <div style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>Execution</div>
@@ -473,7 +657,7 @@ export default function ProblemsPage() {
                 <button onClick={toggleAi} style={aiButtonStyle}>AI Tips</button>
               </div>
 
-              <div style={{ padding: '0 16px 16px', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '0 16px 16px', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 12 }}>
                   <div style={metricStyle}>
                     <div style={metricLabelStyle}>Runtime</div>
@@ -485,18 +669,25 @@ export default function ProblemsPage() {
                   </div>
                   <div style={metricStyle}>
                     <div style={metricLabelStyle}>Passed</div>
-                    <div style={metricValueStyle}>{executionResult ? `${executionResult.passed}/${executionResult.total}` : '0/0'}</div>
+                    <div style={metricValueStyle}>{executionResult && executionResult.passed != null && executionResult.total != null ? `${executionResult.passed}/${executionResult.total}` : 'N/A'}</div>
                   </div>
                 </div>
 
-                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, boxSizing: 'border-box', overflow: 'auto' }}>
                   <div>
                     {executionResult?.cases?.length ? (
                       executionResult.cases.map((test, index) => (
                         <div key={index} style={resultRowStyle(test.status === 'Passed')}>
-                          <div>
+                          <div style={{ maxWidth: '70%' }}>
                             <div style={{ fontWeight: 600, color: '#FFFFFF' }}>{test.name}</div>
-                            <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>{test.output}</div>
+                            <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 6 }}>
+                              <div><strong>Input:</strong></div>
+                              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: 'rgba(255,255,255,0.9)', fontSize: 12 }}>{test.input ?? ''}</pre>
+                              <div style={{ marginTop: 6 }}><strong>Expected:</strong></div>
+                              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: 'rgba(255,255,255,0.9)', fontSize: 12 }}>{test.expected ?? ''}</pre>
+                              <div style={{ marginTop: 6 }}><strong>Actual:</strong></div>
+                              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: 'rgba(255,255,255,0.9)', fontSize: 12 }}>{test.output ?? ''}</pre>
+                            </div>
                           </div>
                           <div style={{ color: '#FFFFFF', fontWeight: 700 }}>{test.status}</div>
                         </div>
@@ -505,7 +696,7 @@ export default function ProblemsPage() {
                       <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>No test case details available.</div>
                     )}
                   </div>
-                  <div style={{ background: '#000000', border: '1px solid rgba(255,255,255,0.08)', padding: 12, minHeight: 80, overflowY: 'auto' }}>
+                  <div style={{ background: '#000000', border: '1px solid rgba(255,255,255,0.08)', padding: 12, minHeight: 80 }}>
                     <div style={{ color: 'rgba(255,255,255,0.65)', marginBottom: 8, fontSize: 12 }}>Console output</div>
                     <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#FFFFFF', fontSize: 12 }}>{consoleText || 'Console output will appear here.'}</pre>
                   </div>
